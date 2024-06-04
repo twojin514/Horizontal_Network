@@ -88,6 +88,9 @@ int main(int argc, char* argv[])
 		cv::Mat X = cv::Mat::zeros(n, 1, CV_64F); // X행렬 생성
 		cv::Mat V = cv::Mat::zeros(m, 1, CV_64F); // V행렬 생성
 		cv::Mat So = cv::Mat::zeros(1, 1, CV_64F); // So행렬 생성
+		cv::Mat SigmaXX = cv::Mat::zeros(n, n, CV_64F); // SigmaXX행렬 생성
+		cv::Mat Sigamll = cv::Mat::zeros(m, m, CV_64F); // SigmaLL행렬 생성
+
         std::vector<double> So_sqrt_vec;
         int iteration = 0;
         std::vector<double> predicteDistance;
@@ -96,18 +99,19 @@ int main(int argc, char* argv[])
         /*********************************************************************
         3.1 W 행렬 조성
         **********************************************************************/
-		ComposeWMatrix(W, m, n, control_points, lines, angles); // W행렬 조성
+		ComposeWMatrix(W, control_points, lines, angles); // W행렬 조성
 
         /*********************************************************************
         3.2 반복 시작
         **********************************************************************/
         for (iteration; iteration < 100; ++iteration) {
-			ComposeAMatrix(A, m, n, points, lines, angles, control_points); // A행렬 조성
-			ComposeLMatrix(L, m, points, lines, angles, control_points, predicteDistance, predicteAngle); // L행렬 조성
-			CalculateXMatrix(X, A, W, L, m, n); // X행렬 계산
-			CalculateVMatrix(V, A, X, L, m, n); // V행렬 계산
-			CalculateSoMatrix(So, V, W, X, m, n); // So행렬 계산
+			ComposeAMatrix(A, points, lines, angles, control_points); // A행렬 조성
+			ComposeLMatrix(L, points, lines, angles, control_points, predicteDistance, predicteAngle); // L행렬 조성
+			CalculateXMatrix(X, A, W, L); // X행렬 계산
+			CalculateVMatrix(V, A, X, L); // V행렬 계산
+			CalculateSoMatrix(So, V, W, m, n); // So행렬 계산
 			So_sqrt_vec.push_back(std::sqrt(So.at<double>(0, 0))); // So의 제곱근을 벡터에 저장
+            SigmaXX = So.at<double>(0, 0)  * (A.t() * W * A).inv(); // SigmaXX 계산
 
 			PrintIteration(outfile, iteration, points, X, V, L , So, m, n); // 반복 출력
 
@@ -121,7 +125,7 @@ int main(int argc, char* argv[])
             {
                 outfile << "\n************************************* End **************************************\n";
                 outfile << "Iteration : " << iteration+1 << "  Adjustment termination : Maximum number of repeated calculations (abnormal termination)\n";
-                UpdateValues(points, X, n); // 측점 좌표 업데이트
+                UpdateValues(points, X); // 측점 좌표 업데이트
 
 
                 break;
@@ -130,7 +134,7 @@ int main(int argc, char* argv[])
             else if (max_diff < 0.000001) {
                 outfile << "\n************************************* End **************************************\n";
                 outfile << "Iteration : " << iteration + 1 << "  Adjustment termination: When the largest adjustment value is reduced to a certain extent, it is terminated (normal termination)n";
-                UpdateValues(points, X, n); // 측점 좌표 업데이트
+                UpdateValues(points, X); // 측점 좌표 업데이트
 
                 break;
             }
@@ -139,7 +143,7 @@ int main(int argc, char* argv[])
             {
 				outfile << "\n************************************* End **************************************\n";
 				outfile << "Iteration : " << iteration + 1 << "  Adjustment termination: When the adjustment value is reduced to a certain extent, it is terminated (normal termination)\n";
-                UpdateValues(points, X, n); // 측점 좌표 업데이트
+                UpdateValues(points, X); // 측점 좌표 업데이트
 
 				break;
 			}
@@ -149,16 +153,16 @@ int main(int argc, char* argv[])
                 if (So_sqrt_vec[iteration - 1] > So_sqrt_vec[iteration - 2]) {
 					outfile << "\n************************************* End **************************************\n";
 					outfile << "Iteration : " << iteration + 1 << "  Adjustment termination: When the adjustment value is increased, it is terminated (abnormal termination)\n";
-                    UpdateValues(points, X, n); // 측점 좌표 업데이트
+                    UpdateValues(points, X); // 측점 좌표 업데이트
 
 					break;
                 }
 			}
 
-			UpdateValues(points, X, n); // 측점 좌표 업데이트
+            UpdateValues(points, X); // 측점 좌표 업데이트
         }
 
-		PrintResult(outfile, points, control_points, lines, angles, X, points_init, n, predicteDistance, predicteAngle); // 결과 출력
+		PrintResult(outfile, points, control_points, lines, angles, X, points_init, predicteDistance, predicteAngle, SigmaXX); // 결과 출력
 
 
 
