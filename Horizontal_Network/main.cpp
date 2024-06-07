@@ -16,7 +16,6 @@ int main(int argc, char* argv[])
     QObject::connect(&w, &Horizontal_Network::startButtonClicked, [&w]() {
         std::string inputtitle, business_information, inputname, input_controldata, input_measuredata, input_angledata, input_linedata, output_data;
 
-
         /*********************************************************************
         1.  입력 자료 읽기(작업지시서)
         **********************************************************************/
@@ -30,24 +29,14 @@ int main(int argc, char* argv[])
         QString name = w.getName();
         QString output = w.getOutput();
 
-  //      inputtitle = title.toStdString();
-  //      business_information = business.toStdString();
-  //      inputname = name.toStdString();
-  //      input_controldata = controlPath.toStdString();
-		//input_measuredata = measurePath.toStdString();
-		//input_angledata = anglePath.toStdString();
-		//input_linedata = linePath.toStdString();
-		//output_data = output.toStdString();
-
-		inputtitle = "Horizontal Network Calculation";
-		business_information = "Department of Civil En";
-		inputname = "Kwon";
-		input_controldata = "C:\\Horizontal_Network\\Input2\\C.csv";
-		input_measuredata = "C:\\Horizontal_Network\\Input2\\M.csv";
-		input_angledata = "C:\\Horizontal_Network\\Input2\\A.csv";
-		input_linedata = "C:\\Horizontal_Network\\Input2\\D.csv";
-		output_data = "C:\\Horizontal_Network\\Output\\Output.txt";
-
+        inputtitle = title.toStdString();
+        business_information = business.toStdString();
+        inputname = name.toStdString();
+        input_controldata = controlPath.toStdString();
+		input_measuredata = measurePath.toStdString();
+		input_angledata = anglePath.toStdString();
+		input_linedata = linePath.toStdString();
+		output_data = output.toStdString();
 
 
         std::vector<Point> points; // 입력 자료
@@ -60,8 +49,8 @@ int main(int argc, char* argv[])
         ReadPointFile(input_controldata, input_measuredata, points); // 입력 자료 읽기
 		ReadControlFile(input_controldata, control_points); // 제어점 읽기
 		ReadMeasureFile(input_measuredata, measure_points); // 측정점 읽기
-        ReadLineFile(input_linedata, lines);
-        ReadAngleFile(input_angledata, angles);
+        ReadLineFile(input_linedata, lines); // 거리 자료 읽기
+        ReadAngleFile(input_angledata, angles); // 각 자료 읽기
 
         std::ofstream outfile(output_data);  // 출력 자료 생성
 
@@ -78,7 +67,7 @@ int main(int argc, char* argv[])
         /*********************************************************************
         3. 수평망 조정
         **********************************************************************/
-        outfile << "\n************************************* Start **************************************\n";
+        outfile << "\n****************************************** Start ******************************************\n";
 
         int n = 2 * points.size(); // 측점의 개수
         int m = 2 * control_points.size() + lines.size() + angles.size(); // 관측 수
@@ -89,89 +78,78 @@ int main(int argc, char* argv[])
 		cv::Mat V = cv::Mat::zeros(m, 1, CV_64F); // V행렬 생성
 		cv::Mat So = cv::Mat::zeros(1, 1, CV_64F); // So행렬 생성
 		cv::Mat SigmaXX = cv::Mat::zeros(n, n, CV_64F); // SigmaXX행렬 생성
-		cv::Mat Sigamll = cv::Mat::zeros(m, m, CV_64F); // SigmaLL행렬 생성
-
+		cv::Mat SigmaLL = cv::Mat::zeros(m, m, CV_64F); // SigmaLL행렬 생성
+        std::vector<double> predicteDistance;
+        std::vector<double> predicteAngle;
         std::vector<double> So_sqrt_vec;
         int iteration = 0;
-        std::vector<double> predicteDistance;
-		std::vector<double> predicteAngle;
+
 
         /*********************************************************************
         3.1 W 행렬 조성
         **********************************************************************/
 		ComposeWMatrix(W, control_points, lines, angles); // W행렬 조성
 
+
         /*********************************************************************
         3.2 반복 시작
         **********************************************************************/
         for (iteration; iteration < 100; ++iteration) {
-			ComposeAMatrix(A, points, lines, angles, control_points); // A행렬 조성
-			ComposeLMatrix(L, points, lines, angles, control_points, predicteDistance, predicteAngle); // L행렬 조성
-			CalculateXMatrix(X, A, W, L); // X행렬 계산
-			CalculateVMatrix(V, A, X, L); // V행렬 계산
-			CalculateSoMatrix(So, V, W, m, n); // So행렬 계산
-			So_sqrt_vec.push_back(std::sqrt(So.at<double>(0, 0))); // So의 제곱근을 벡터에 저장
-            SigmaXX = So.at<double>(0, 0)  * (A.t() * W * A).inv(); // SigmaXX 계산
+            predicteDistance.clear();
+            predicteAngle.clear();
 
-			PrintIteration(outfile, iteration, points, X, V, L , So, m, n); // 반복 출력
+            ComposeAMatrix(A, points, lines, angles, control_points); // A행렬 조성
+            ComposeLMatrix(L, points, lines, angles, control_points, predicteDistance, predicteAngle); // L행렬 조성
+            CalculateXMatrix(X, A, W, L); // X행렬 계산
+            CalculateVMatrix(V, A, X, L); // V행렬 계산
+            CalculateSoMatrix(So, V, W, m, n); // So행렬 계산
+            So_sqrt_vec.push_back(std::sqrt(So.at<double>(0, 0))); // So의 제곱근을 벡터에 저장
+            SigmaXX = So.at<double>(0, 0) * (A.t() * W * A).inv(); // SigmaXX 계산
+			SigmaLL = A * SigmaXX * A.t(); // SigmaLL 계산
+            PrintIteration(outfile, iteration, points, X, V, L, So, m, n); // 반복 출력
 
             double max_diff = 0.0;
-            for (int i = 0; i < X.rows; ++i)
-            {
-				max_diff = std::max(max_diff, std::abs(X.at<double>(i, 0)));
+            for (int i = 0; i < X.rows; ++i) {
+                max_diff = std::max(max_diff, std::abs(X.at<double>(i, 0)));
             }
 
-            if (iteration == 100)
-            {
-                outfile << "\n************************************* End **************************************\n";
-                outfile << "Iteration : " << iteration+1 << "  Adjustment termination : Maximum number of repeated calculations (abnormal termination)\n";
+            if (iteration == 99) {
+                outfile << "\n***************************************** End *****************************************\n";
+                outfile << "Iteration : " << iteration + 1 << "  \nAdjustment termination : Maximum number of repeated calculations (abnormal termination)\n";
                 UpdateValues(points, X); // 측점 좌표 업데이트
-
-
                 break;
             }
 
             else if (max_diff < 0.000001) {
-                outfile << "\n************************************* End **************************************\n";
-                outfile << "Iteration : " << iteration + 1 << "  Adjustment termination: When the largest adjustment value is reduced to a certain extent, it is terminated (normal termination)n";
+                outfile << "\n***************************************** End *****************************************\n";
+                outfile << "Iteration : " << iteration + 1 << "  \nAdjustment termination: When the largest adjustment value is reduced to a certain extent, it is terminated (normal termination)\n";
                 UpdateValues(points, X); // 측점 좌표 업데이트
-
                 break;
             }
 
-			else if (So_sqrt_vec.size() > 1 && std::abs(So_sqrt_vec[So_sqrt_vec.size() - 1] - So_sqrt_vec[So_sqrt_vec.size() - 2]) < 0.000001)
-            {
-				outfile << "\n************************************* End **************************************\n";
-				outfile << "Iteration : " << iteration + 1 << "  Adjustment termination: When the adjustment value is reduced to a certain extent, it is terminated (normal termination)\n";
+            else if (So_sqrt_vec.size() > 1 && std::abs(So_sqrt_vec[So_sqrt_vec.size() - 1] - So_sqrt_vec[So_sqrt_vec.size() - 2]) < 0.000001) {
+                outfile << "\n***************************************** End *****************************************\n";
+                outfile << "Iteration : " << iteration + 1 << "  \nAdjustment termination: When the adjustment value is reduced to a certain extent, it is terminated (normal termination)\n";
                 UpdateValues(points, X); // 측점 좌표 업데이트
+                break;
+            }
 
-				break;
-			}
-
-			else if (iteration >= 2 && std::abs(So_sqrt_vec[iteration] - So_sqrt_vec[iteration - 1]) > 0)
-            {
+            else if (iteration >= 2 && std::abs(So_sqrt_vec[iteration] - So_sqrt_vec[iteration - 1]) > 0) {
                 if (So_sqrt_vec[iteration - 1] > So_sqrt_vec[iteration - 2]) {
-					outfile << "\n************************************* End **************************************\n";
-					outfile << "Iteration : " << iteration + 1 << "  Adjustment termination: When the adjustment value is increased, it is terminated (abnormal termination)\n";
+                    outfile << "\n***************************************** End *****************************************\n";
+                    outfile << "Iteration : " << iteration + 1 << "  \nAdjustment termination: When the adjustment value is increased, it is terminated (abnormal termination)\n";
                     UpdateValues(points, X); // 측점 좌표 업데이트
-
-					break;
+                    break;
                 }
-			}
+            }
 
             UpdateValues(points, X); // 측점 좌표 업데이트
         }
 
-		PrintResult(outfile, points, control_points, lines, angles, X, points_init, predicteDistance, predicteAngle, SigmaXX); // 결과 출력
+		double X_test = (m - n) * sqrt(So.at<double>(0, 0)) * sqrt(So.at<double>(0, 0)) / (So_sqrt_vec[iteration - 1] * So_sqrt_vec[iteration - 1]);
+		PrintResult(outfile, m, points, control_points, lines, angles, X, points_init, predicteDistance, predicteAngle, SigmaXX, SigmaLL, So, X_test); // 결과 출력
 
-
-
-
-
-
-        outfile.close();
-
-
+		outfile.close(); // 출력 자료 닫기
         });
 
 

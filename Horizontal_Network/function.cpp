@@ -84,7 +84,7 @@ void ReadControlFile(const std::string& Control_FileName, std::vector<Point>& co
         std::string token;
         point.index = ++i;
         std::getline(iss, token, ',');
-        point.name = token;
+        point.name = removeSpaces(token);
         std::getline(iss, token, ',');
         point.X = std::stod(token);
         std::getline(iss, token, ',');
@@ -121,7 +121,7 @@ void ReadMeasureFile(const std::string& Coordinate_FileName, std::vector<Point>&
         std::string token;
         point.index = ++i;
         std::getline(iss, token, ',');
-        point.name = token;
+        point.name = removeSpaces(token);
         std::getline(iss, token, ',');
         point.X = std::stod(token);
         std::getline(iss, token, ',');
@@ -138,6 +138,39 @@ void ReadMeasureFile(const std::string& Coordinate_FileName, std::vector<Point>&
     measure_data = vetor_points;
 }
 
+//void ReadLineFile(const std::string& Distance_FileName, std::vector<Line>& lines_data) {
+//    std::ifstream file(Distance_FileName);
+//    std::string line_header;
+//    std::string line_data;
+//    std::vector<Line> vetor_lines;
+//    int i = 0;
+//
+//    if (!file.is_open()) {
+//        std::cerr << "Error : Line File not found\n";
+//        return;
+//    }
+//
+//    std::getline(file, line_header); // 첫 줄은 헤더이므로 읽지 않음
+//
+//    while (std::getline(file, line_data)) {
+//        std::istringstream iss(line_data);
+//        Line line;
+//        std::string token;
+//        line.index = ++i;
+//        std::getline(iss, token, ',');
+//        line.From = token;
+//        std::getline(iss, token, ',');
+//        line.To = token;
+//        std::getline(iss, token, ',');
+//        line.Distance = std::stod(token);
+//        std::getline(iss, token, ',');
+//        line.Distance_SD = token.empty() ? 0 : std::stod(token);
+//
+//        vetor_lines.push_back(line);
+//    }
+//
+//    lines_data = vetor_lines;
+//}
 void ReadLineFile(const std::string& Distance_FileName, std::vector<Line>& lines_data) {
     std::ifstream file(Distance_FileName);
     std::string line_header;
@@ -157,12 +190,20 @@ void ReadLineFile(const std::string& Distance_FileName, std::vector<Line>& lines
         Line line;
         std::string token;
         line.index = ++i;
+
+        // 공백 제거 후 From 필드에 저장
         std::getline(iss, token, ',');
-        line.From = token;
+        line.From = removeSpaces(token);
+
+        // 공백 제거 후 To 필드에 저장
         std::getline(iss, token, ',');
-        line.To = token;
+        line.To = removeSpaces(token);
+
+        // Distance 필드에 저장
         std::getline(iss, token, ',');
         line.Distance = std::stod(token);
+
+        // Distance_SD 필드에 저장
         std::getline(iss, token, ',');
         line.Distance_SD = token.empty() ? 0 : std::stod(token);
 
@@ -171,7 +212,6 @@ void ReadLineFile(const std::string& Distance_FileName, std::vector<Line>& lines
 
     lines_data = vetor_lines;
 }
-
 void ReadAngleFile(const std::string& Angle_FileName, std::vector<Angle>& angles_data) {
     std::ifstream file(Angle_FileName);
     std::string angle_header;
@@ -192,11 +232,11 @@ void ReadAngleFile(const std::string& Angle_FileName, std::vector<Angle>& angles
         std::string token;
         angle.index = ++i;
         std::getline(iss, token, ',');
-        angle.Backsight = token;
+        angle.Backsight = removeSpaces(token);
         std::getline(iss, token, ',');
-        angle.Occupied = token;
+        angle.Occupied = removeSpaces(token);
         std::getline(iss, token, ',');
-        angle.Foresight = token;
+        angle.Foresight = removeSpaces(token);
         std::getline(iss, token, ',');
         angle.Angle_D = std::stod(token);
         std::getline(iss, token, ',');
@@ -216,14 +256,14 @@ void PrintInformation(std::ofstream& outfile, const std::string& title, const st
     outfile << std::fixed << std::setprecision(3);
 
     outfile << "**********************************************************************************************\n";
-    outfile << "************************************ " << title << " ******************************\n";
-    outfile << "**************************** " << business_information << " *************************\n";
+    outfile << "*************************************** " << title << " **********************************\n";
+    outfile << "********************************* " << business_information << " ***************************\n";
     outfile << "**********************************************************************************************\n";
-    outfile << "***************************************************** Name : " << name << " **********************\n";
-
+    outfile << "*********************************************************** Name : " << name << " **********************\n";
     outfile << "**********************************************************************************************\n\n";
+
     outfile << "\n*************************************** 1. Input Data ***************************************\n";
-    outfile << "\n************************************* Point Data **************************************\n";
+    outfile << "\n**************************************** Point Data *****************************************\n";
     outfile << std::setw(15) << "Point_ID" << "\t|"
         << std::setw(25) << "Control(T/F)" << "\t|"
         << std::setw(25) << "Point_Name" << "\t|"
@@ -242,13 +282,13 @@ void PrintInformation(std::ofstream& outfile, const std::string& title, const st
             << std::setw(25) << point.Y_SD << "\n\n";
     }
 
-    outfile << "\n************************************* Line Data **************************************\n";
+    outfile << "\n***************************************** Line Data *****************************************\n";
 
     outfile << std::setw(10) << "Line_ID" << "\t|"
         << std::setw(21) << "From" << "\t|"
         << std::setw(21) << "To" << "\t|"
         << std::setw(21) << "Distance" << "\t|"
-        << std::setw(21) << "Distance_SD" << "\n\n";
+        << std::setw(21) << "S_Distance" << "\n\n";
 
     for (const auto& line : lines_data) {
         outfile << std::setw(10) << line.index << "\t"
@@ -258,16 +298,16 @@ void PrintInformation(std::ofstream& outfile, const std::string& title, const st
             << std::setw(21) << line.Distance_SD << "\n\n";
     }
 
-    outfile << "\n************************************* Angle Data **************************************\n";
+    outfile << "\n**************************************** Angle Data *****************************************\n";
 
     outfile << std::setw(10) << "Angle_ID" << "\t|"
         << std::setw(21) << "Backsight" << "\t|"
         << std::setw(21) << "Occupied" << "\t|"
         << std::setw(21) << "Foresight" << "\t|"
         << std::setw(21) << "Angle_D" << "\t|"
-        << std::setw(21) << "Angle_S" << "\t|"
         << std::setw(21) << "Angle_M" << "\t|"
-        << std::setw(21) << "Angle_SD" << "\n\n";
+        << std::setw(21) << "Angle_S" << "\t|"
+        << std::setw(21) << "S_Angle" << "\n\n";
 
     for (const auto& angle : angles_data) {
         outfile << std::setw(10) << angle.index << "\t"
@@ -275,16 +315,61 @@ void PrintInformation(std::ofstream& outfile, const std::string& title, const st
             << std::setw(21) << angle.Occupied << "\t"
             << std::setw(21) << angle.Foresight << "\t"
             << std::setw(21) << angle.Angle_D << "\t"
-            << std::setw(21) << angle.Angle_S << "\t"
             << std::setw(21) << angle.Angle_M << "\t"
+            << std::setw(21) << angle.Angle_S << "\t"
             << std::setw(21) << angle.Angle_SD << "\n\n";
     }
 }
 
+// 공백 제거 함수
+std::string removeSpaces(const std::string& str) {
+    std::string result = str;
+    result.erase(std::remove(result.begin(), result.end(), ' '), result.end());
+    return result;
+}
+
+//void SortFile(std::vector<Point>& Points, std::vector<Line>& Distances, std::vector<Angle>& Angles) {
+//    std::vector<std::string> point_names;
+//
+//    for (const auto& point : Points) {
+//        if (std::find(point_names.begin(), point_names.end(), point.name) == point_names.end()) {
+//            point_names.push_back(point.name);
+//        }
+//    }
+//    for (const auto& distance : Distances) {
+//        if (std::find(point_names.begin(), point_names.end(), distance.From) == point_names.end()) {
+//            point_names.push_back(distance.From);
+//        }
+//        if (std::find(point_names.begin(), point_names.end(), distance.To) == point_names.end()) {
+//            point_names.push_back(distance.To);
+//        }
+//    }
+//    for (const auto& angle : Angles) {
+//        if (std::find(point_names.begin(), point_names.end(), angle.Backsight) == point_names.end()) {
+//            point_names.push_back(angle.Backsight);
+//        }
+//        if (std::find(point_names.begin(), point_names.end(), angle.Occupied) == point_names.end()) {
+//            point_names.push_back(angle.Occupied);
+//        }
+//        if (std::find(point_names.begin(), point_names.end(), angle.Foresight) == point_names.end()) {
+//            point_names.push_back(angle.Foresight);
+//        }
+//    }
+//
+//    // Remove empty names and sort
+//    point_names.erase(std::remove(point_names.begin(), point_names.end(), ""), point_names.end());
+//    std::sort(point_names.begin(), point_names.end());
+//
+//    // Save Sorting Result
+//    Points = Points;
+//    Distances = Distances;
+//    Angles = Angles;
+//}
+
+
 void SortFile(std::vector<Point>& Points, std::vector<Line>& Distances, std::vector<Angle>& Angles) {
     std::vector<std::string> point_names;
 
-    // Collect All Unique Point Names
     for (const auto& point : Points) {
         if (std::find(point_names.begin(), point_names.end(), point.name) == point_names.end()) {
             point_names.push_back(point.name);
@@ -314,17 +399,22 @@ void SortFile(std::vector<Point>& Points, std::vector<Line>& Distances, std::vec
     point_names.erase(std::remove(point_names.begin(), point_names.end(), ""), point_names.end());
     std::sort(point_names.begin(), point_names.end());
 
-    // Save Sorting Result
-    Points = Points;
-    Distances = Distances;
-    Angles = Angles;
+	if (Points.size() != point_names.size()) {
+		std::cerr << "Error: Point names do not match" << std::endl;
+		return;
+	}
+
+    // Sort Points based on point_names
+    //std::sort(Points.begin(), Points.end(), [&point_names](const Point& a, const Point& b) {
+    //    return std::find(point_names.begin(), point_names.end(), a.name) < std::find(point_names.begin(), point_names.end(), b.name);
+    //    });
 }
 
 void PrintSortFile(std::ofstream& outfile, const std::vector<Point>& Points, const std::vector<Line>& Distances, const std::vector<Angle>& Angles) {
     outfile << std::fixed << std::setprecision(3);
 
-    outfile << "\n*************************************** 2. Sort station names and order logic ***************************************\n";
-    outfile << "\n************************************* Point Data **************************************\n";
+    outfile << "\n************************* 2. Sort station names and order logic *****************************\n";
+    outfile << "\n**************************************** Point Data *****************************************\n";
     outfile << std::setw(15) << "Point_Order" << "\t|"
         << std::setw(25) << "Point_Name" << "\t|"
         << std::setw(25) << "X" << "\t|"
@@ -348,18 +438,39 @@ void ComposeWMatrix(cv::Mat& W, const std::vector<Point>& Control_Points, const 
 
     // Distances
     for (int i = 0; i < Distances.size(); ++i) {
-        W.at<double>(i, i) = 1 / (Distances[i].Distance_SD * Distances[i].Distance_SD);
+        if (Distances[i].Distance_SD > 0) {
+            W.at<double>(i, i) = 1 / (Distances[i].Distance_SD * Distances[i].Distance_SD);
+        }
+        else {
+            std::cerr << "Invalid standard deviation for distance at index " << i << std::endl;
+        }
     }
 
     // Angles
     for (int i = 0, j = Distances.size(); i < Angles.size(); i++, j++) {
-        W.at<double>(j, j) = 1 / (Angles[i].Angle_SD / 3600.0 * Angles[i].Angle_SD / 3600.0);
+        double angleSD_rad = (Angles[i].Angle_SD / 3600.0) * (M_PI / 180.0);
+        if (angleSD_rad > 0) {
+            W.at<double>(j, j) = 1 / (angleSD_rad * angleSD_rad);
+        }
+        else {
+            std::cerr << "Invalid standard deviation for angle at index " << i << std::endl;
+        }
     }
 
     // Control Points
     for (int i = 0, j = Distances.size() + Angles.size(); i < Control_Points.size(); i++, j++) {
-        W.at<double>(j, j) = 1 / (Control_Points[i].X_SD * Control_Points[i].X_SD);
-        W.at<double>(j + 1, j + 1) = 1 / (Control_Points[i].Y_SD * Control_Points[i].Y_SD);
+        if (Control_Points[i].X_SD > 0) {
+            W.at<double>(j, j) = 1 / (Control_Points[i].X_SD * Control_Points[i].X_SD);
+        }
+        else {
+            std::cerr << "Invalid standard deviation for control point X at index " << i << std::endl;
+        }
+        if (Control_Points[i].Y_SD > 0) {
+            W.at<double>(j + 1, j + 1) = 1 / (Control_Points[i].Y_SD * Control_Points[i].Y_SD);
+        }
+        else {
+            std::cerr << "Invalid standard deviation for control point Y at index " << i << std::endl;
+        }
         j++;
     }
 }
@@ -392,10 +503,15 @@ void ComposeAMatrix(cv::Mat& A, const std::vector<Point>& Points, const std::vec
         double deltaY = Points[toIdx].Y - Points[fromIdx].Y;
         double distance = sqrt(deltaX * deltaX + deltaY * deltaY);
 
-        A.at<double>(i, 2 * fromIdx) = deltaX / distance;
-        A.at<double>(i, 2 * fromIdx + 1) = deltaY / distance;
-        A.at<double>(i, 2 * toIdx) = -deltaX / distance;
-        A.at<double>(i, 2 * toIdx + 1) = -deltaY / distance;
+        if (distance > 0) {
+            A.at<double>(i, 2 * fromIdx) = -deltaX / distance;
+            A.at<double>(i, 2 * fromIdx + 1) = -deltaY / distance;
+            A.at<double>(i, 2 * toIdx) = deltaX / distance;
+            A.at<double>(i, 2 * toIdx + 1) = deltaY / distance;
+        }
+        else {
+            std::cerr << "Error: Zero distance for points " << Distances[i].From << " and " << Distances[i].To << std::endl;
+        }
     }
 
     // Angles
@@ -421,20 +537,31 @@ void ComposeAMatrix(cv::Mat& A, const std::vector<Point>& Points, const std::vec
             continue;
         }
 
-        double deltaXBackOcc = Points[backIdx].X - Points[occIdx].X;
-        double deltaYBackOcc = Points[backIdx].Y - Points[occIdx].Y;
-        double deltaXForeOcc = Points[foreIdx].X - Points[occIdx].X;
-        double deltaYForeOcc = Points[foreIdx].Y - Points[occIdx].Y;
 
-        double denomBack = pow(deltaXBackOcc, 2) + pow(deltaYBackOcc, 2);
-        double denomFore = pow(deltaXForeOcc, 2) + pow(deltaYForeOcc, 2);
 
-        A.at<double>(i + Distances.size(), 2 * backIdx) = -deltaYBackOcc / denomBack;
-        A.at<double>(i + Distances.size(), 2 * backIdx + 1) = deltaXBackOcc / denomBack;
-        A.at<double>(i + Distances.size(), 2 * occIdx) = (deltaXBackOcc / denomBack - deltaXForeOcc / denomFore);
-        A.at<double>(i + Distances.size(), 2 * occIdx + 1) = (deltaYBackOcc / denomBack - deltaYForeOcc / denomFore);
-        A.at<double>(i + Distances.size(), 2 * foreIdx) = deltaYForeOcc / denomFore;
-        A.at<double>(i + Distances.size(), 2 * foreIdx + 1) = -deltaXForeOcc / denomFore;
+        double deltaXBackOcc = Points[occIdx].X - Points[backIdx].X;
+        double deltaYBackOcc = Points[occIdx].Y - Points[backIdx].Y;
+        double deltaXForeOcc = -Points[foreIdx].X + Points[occIdx].X;
+        double deltaYForeOcc = -Points[foreIdx].Y + Points[occIdx].Y;
+
+        double dBack = deltaXBackOcc * deltaXBackOcc + deltaYBackOcc * deltaYBackOcc;
+        double dFore = deltaXForeOcc * deltaXForeOcc + deltaYForeOcc * deltaYForeOcc;
+
+        if (dBack > 0 && dFore > 0) {
+            A.at<double>(i + Distances.size(), 2 * backIdx) = deltaYBackOcc / dBack;
+            A.at<double>(i + Distances.size(), 2 * backIdx + 1) = -deltaXBackOcc / dBack;
+
+            A.at<double>(i + Distances.size(), 2 * occIdx) = (-deltaYBackOcc / dBack + deltaYForeOcc / dFore);
+            A.at<double>(i + Distances.size(), 2 * occIdx + 1) = (deltaXBackOcc / dBack - deltaXForeOcc / dFore);
+
+            A.at<double>(i + Distances.size(), 2 * foreIdx) = -deltaYForeOcc / dFore;
+            A.at<double>(i + Distances.size(), 2 * foreIdx + 1) = deltaXForeOcc / dFore;
+        }
+        else {
+            std::cerr << "Error: Zero denominator for angle calculation at index " << i << std::endl;
+        }
+
+
     }
 
     // Control Points
@@ -524,12 +651,14 @@ void ComposeLMatrix(cv::Mat& L, const std::vector<Point>& Points, const std::vec
                 angle = 360 - angle;
             }
 
-            angle = angle / (180 / M_PI);
+            angle = angle * (M_PI / 180.0);
         }
-        L.at<double>(i + Distances.size(), 0) = observedAngle / (180 / M_PI) - angle;
+        L.at<double>(i + Distances.size(), 0) = observedAngle * (M_PI / 180.0) - angle;
 
         double angle_DD = angle * (180 / M_PI);
         predicteAngles.push_back(angle_DD);
+
+
     }
 
     // Control Points
@@ -545,8 +674,8 @@ void ComposeLMatrix(cv::Mat& L, const std::vector<Point>& Points, const std::vec
 
         if (ctrlIdx != -1) {
             int rowIdx = Distances.size() + Angles.size() + 2 * i;
-            L.at<double>(rowIdx, 0) = Points[ctrlIdx].X - Control_Points[i].X;
-            L.at<double>(rowIdx + 1, 0) = Points[ctrlIdx].Y - Control_Points[i].Y;
+            L.at<double>(rowIdx, 0) = Control_Points[i].X - Points[ctrlIdx].X;
+            L.at<double>(rowIdx + 1, 0) = Control_Points[i].Y - Points[ctrlIdx].Y;
         }
     }
 }
@@ -570,6 +699,8 @@ void PrintIteration(std::ofstream& outfile, int iteration, const std::vector<Poi
     outfile << std::fixed << std::setprecision(3);
 
     outfile << "\n*************************************** Iteration " << iteration + 1 << " ***************************************\n\n";
+    outfile << std::setw(10) << "So : " << sqrt(So.at<double>(0, 0)) << "\n\n";
+
     outfile << std::setw(12) << "index" << "\t|"
         << std::setw(25) << "Point" << "\t|"
         << std::setw(25) << "before_X" << "\t|"
@@ -589,21 +720,68 @@ void PrintIteration(std::ofstream& outfile, int iteration, const std::vector<Poi
             << std::setw(25) << Points[i].X + X.at<double>(2 * i, 0) << "\t"
             << std::setw(25) << Points[i].Y + X.at<double>(2 * i + 1, 0) << "\n\n";
     }
-
-    outfile << "\n************************************* Variance-Covariance Matrix **************************************\n";
-    outfile << std::setw(10) << "So : " << sqrt(So.at<double>(0, 0)) << "\n\n";
 }
 
 void UpdateValues(std::vector<Point>& Points, const cv::Mat& X) {
     int n = Points.size() * 2;
+    if (X.rows != n || X.cols != 1) {
+        std::cerr << "Error: Size mismatch between X and Points vector." << std::endl;
+        return;
+    }
+
     for (int i = 0; i < n / 2; ++i) {
         Points[i].X += X.at<double>(2 * i, 0);
         Points[i].Y += X.at<double>(2 * i + 1, 0);
     }
 }
 
-void PrintResult(std::ofstream& outfile, const std::vector<Point>& Points, const std::vector<Point>& Control_Points, const std::vector<Line>& Distances, const std::vector<Angle>& Angles, const cv::Mat& X, const std::vector<Point>& Points_init, const std::vector<double>& predicteDistances, const std::vector<double>& predicteAngles, const cv::Mat& SigmaXX) {
+void PrintResult(std::ofstream& outfile, int& m, const std::vector<Point>& Points, const std::vector<Point>& Control_Points, const std::vector<Line>& Distances, const std::vector<Angle>& Angles, const cv::Mat& X, const std::vector<Point>& Points_init, const std::vector<double>& predicteDistances, const std::vector<double>& predicteAngles, const cv::Mat& SigmaXX, const cv::Mat& SigmaLL, const cv::Mat& So, const double X2) {
     outfile << std::fixed << std::setprecision(3);
+
+    outfile << "So : " << sqrt(So.at<double>(0, 0)) << "\n\n";
+
+    int dof = m - Points.size() * 2;
+
+
+
+
+    // 99% 신뢰 수준에서의 임계값 테이블
+    std::map<int, std::pair<double, double>> chi_square_critical_values = {
+        {1, {0.00004, 7.88}}, {2, {0.01, 10.60}}, {3, {0.07, 12.84}}, {4, {0.21, 14.86}},
+        {5, {0.41, 16.75}}, {6, {0.68, 18.55}}, {7, {0.99, 20.28}}, {8, {1.34, 21.95}},
+        {9, {1.73, 23.59}}, {10, {2.16, 25.19}}, {11, {2.60, 26.76}}, {12, {3.07, 28.30}},
+        {13, {3.57, 29.82}}, {14, {4.07, 31.32}}, {15, {4.60, 32.80}}, {16, {5.14, 34.27}},
+        {17, {5.70, 35.72}}, {18, {6.26, 37.16}}, {19, {6.84, 38.58}}, {20, {7.43, 40.00}},
+        {21, {8.03, 41.40}}, {22, {8.64, 42.80}}, {23, {9.26, 44.18}}, {24, {9.89, 45.56}},
+        {25, {10.52, 46.93}}, {26, {11.16, 48.29}}, {27, {11.81, 49.64}}, {28, {12.46, 50.99}},
+        {29, {13.12, 52.34}}, {30, {13.79, 53.67}}, {40, {20.71, 63.69}}, {50, {27.99, 76.15}},
+        {60, {35.53, 88.38}}, {70, {43.19, 100.42}}, {80, {51.17, 112.33}}, {90, {59.20, 124.12}},
+        {100, {67.33, 135.81}}
+    };
+
+    // 입력받은 자유도에 대한 임계값을 찾기
+    double critical_value_low = 0, critical_value_high = 0;
+
+    outfile << "\n********************************** Chi-squared Test ***********************************\n";
+    outfile << std::setw(5) <<" Degree of Freedom : " << dof << "\n";
+	outfile << std::setw(5) << " X2 : " << X2 << "\n\n";
+
+    if (chi_square_critical_values.find(dof) != chi_square_critical_values.end()) {
+        critical_value_low = chi_square_critical_values[dof].first;
+        critical_value_high = chi_square_critical_values[dof].second;
+    }
+    else {
+        std::cerr << "No threshold was found for that degree of freedom.\n";
+    }
+
+	outfile << std::setw(5) << " [" << critical_value_low << " < " << X2 << " < " << critical_value_high << "]" << "\n";
+    if (critical_value_low < X2 && X2 < critical_value_high) {
+		outfile << "So^2 can be judged to be valid at a 99% confidence level.\n";
+    }
+    else {
+		outfile << "It can be determined that So^2 is not valid at the 99% confidence level.\n";
+    }
+
 
     outfile << "\n************************************* Point Data **************************************\n";
     outfile << std::setw(15) << "Point_ID" << "\t|"
@@ -612,8 +790,8 @@ void PrintResult(std::ofstream& outfile, const std::vector<Point>& Points, const
         << std::setw(25) << "Y_init" << "\t|"
         << std::setw(25) << "X_final" << "\t|"
         << std::setw(25) << "Y_final" << "\t|"
-        << std::setw(25) << "SD_X" << "\t|"
-        << std::setw(25) << "SD_Y" << "\n\n";
+        << std::setw(25) << "S_X" << "\t|"
+        << std::setw(25) << "S_Y" << "\n\n";
 
     for (int i = 0; i < Points.size(); ++i) {
         outfile << std::setw(12) << Points[i].index << "\t"
@@ -622,8 +800,8 @@ void PrintResult(std::ofstream& outfile, const std::vector<Point>& Points, const
             << std::setw(25) << Points_init[i].Y << "\t"
             << std::setw(25) << Points[i].X << "\t"
             << std::setw(25) << Points[i].Y << "\t"
-            << std::setw(25) << SigmaXX.at<double>(2 * i, 2 * i) << "\t"
-            << std::setw(25) << SigmaXX.at<double>(2 * i + 1, 2 * i + 1) << "\n\n";
+            << std::setw(25) << sqrt(SigmaXX.at<double>(2 * i, 2 * i)) << "\t"
+            << std::setw(25) << sqrt(SigmaXX.at<double>(2 * i + 1, 2 * i + 1)) << "\n\n";
     }
 
     outfile << "\n************************************* Line Data **************************************\n";
@@ -632,7 +810,8 @@ void PrintResult(std::ofstream& outfile, const std::vector<Point>& Points, const
         << std::setw(25) << "To" << "\t|"
         << std::setw(25) << "Distance_obs" << "\t|"
         << std::setw(25) << "Distance_cal" << "\t|"
-        << std::setw(25) << "V" << "\n\n";
+        << std::setw(25) << "Distance_V" << "\t|"
+		<< std::setw(25) << "S_Distance(m)" << "\n\n";
 
     for (int i = 0; i < Distances.size(); ++i) {
         outfile << std::setw(15) << Distances[i].index << "\t"
@@ -640,7 +819,8 @@ void PrintResult(std::ofstream& outfile, const std::vector<Point>& Points, const
             << std::setw(25) << Distances[i].To << "\t"
             << std::setw(25) << Distances[i].Distance << "\t"
             << std::setw(25) << predicteDistances[i] << "\t"
-            << std::setw(25) << Distances[i].Distance - predicteDistances[i] << "\n\n";
+            << std::setw(25) << predicteDistances[i] - Distances[i].Distance << "\t"
+            << std::setw(25) << sqrt(SigmaLL.at<double>(i, i)) << "\n\n";
     }
 
     outfile << "\n************************************* Angle Data **************************************\n";
@@ -650,7 +830,8 @@ void PrintResult(std::ofstream& outfile, const std::vector<Point>& Points, const
         << std::setw(25) << "Foresight" << "\t|"
         << std::setw(25) << "Angle_obs" << "\t|"
         << std::setw(25) << "Angle_cal" << "\t|"
-        << std::setw(25) << "V" << "\n\n";
+        << std::setw(25) << "Angle_V" << "\t|"
+		<< std::setw(25) << "S_Angle(Deg)" << "\n\n";
 
     for (int i = 0; i < Angles.size(); ++i) {
         outfile << std::setw(15) << Angles[i].index << "\t"
@@ -659,6 +840,12 @@ void PrintResult(std::ofstream& outfile, const std::vector<Point>& Points, const
             << std::setw(25) << Angles[i].Foresight << "\t"
             << std::setw(25) << Angles[i].Angle_D + Angles[i].Angle_M / 60.0 + Angles[i].Angle_S / 3600.0 << "\t"
             << std::setw(25) << predicteAngles[i] << "\t"
-            << std::setw(25) << (Angles[i].Angle_D + Angles[i].Angle_M / 60.0 + Angles[i].Angle_S / 3600.0) - predicteAngles[i] << "\n\n";
+			<< std::setw(25) << predicteAngles[i] - (Angles[i].Angle_D + Angles[i].Angle_M / 60.0 + Angles[i].Angle_S / 3600.0) << "\t"
+			<< std::setw(25) << sqrt(SigmaLL.at<double>(i + Distances.size(), i + Distances.size())*(180*M_PI)) << "\n\n";
     }
+
+
+
+
+
 }
